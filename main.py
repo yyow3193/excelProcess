@@ -149,6 +149,7 @@ class YearStatistics:
 
         year_summary_name = "./output/book_year_summary" + ".xls"
         book_year_summary.save(year_summary_name)
+        print("生成：", year_summary_name)
 
 def main():
     yearStatictics = YearStatistics()
@@ -156,7 +157,7 @@ def main():
     for root, dirs, files in os.walk("./input", topdown=False):
         for name in files:
             filename = os.path.join(root, name)
-            print("aaa", os.path.join(root, name))
+            print("读取：", os.path.join(root, name))
             monthbook = MonthBook(filename)
             monthbook.summary()
 
