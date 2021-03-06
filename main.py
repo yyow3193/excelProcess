@@ -13,11 +13,14 @@ fukuanjiane_colindex = 4  # "付款金额" 列index
 
 summary_colindex_list = [2, 3, 4]
 
+
 def getColChar(colindex):
     return chr(colindex + 65) + "列"
 
+
 def getRowNumber(rowindex):
     return str(rowindex + 1) + "行"
+
 
 class MonthBook:
 
@@ -55,7 +58,8 @@ class MonthBook:
                     try:
                         testfieldtype = row[colindex].value + 1
                     except TypeError:
-                        print("表 " + self.excelname + " sheet:" + sheet.name +" 单元格:" + getColChar(colindex) + getRowNumber(
+                        print("表 " + self.excelname + " sheet:" + sheet.name + " 单元格:" + getColChar(
+                            colindex) + getRowNumber(
                             rowindex) + "不支持加法，请检查是否有数字,", TypeError)
 
                 if row[name_colindex].value in self.name2recordlist:
@@ -86,13 +90,13 @@ class MonthBook:
                 if i == 1:
                     continue  # 列名不要加进去了
                 if k in self.name2recordsum:
-                        self.name2recordsum[k][weight_colindex].value = self.name2recordsum[k][weight_colindex].value + \
-                                                                        record[weight_colindex].value
-                        self.name2recordsum[k][hanshuie_colindex].value = self.name2recordsum[k][hanshuie_colindex].value + \
-                                                                          record[hanshuie_colindex].value
-                        self.name2recordsum[k][fukuanjiane_colindex].value = self.name2recordsum[k][
-                                                                                 fukuanjiane_colindex].value + record[
-                                                                                 fukuanjiane_colindex].value
+                    self.name2recordsum[k][weight_colindex].value = self.name2recordsum[k][weight_colindex].value + \
+                                                                    record[weight_colindex].value
+                    self.name2recordsum[k][hanshuie_colindex].value = self.name2recordsum[k][hanshuie_colindex].value + \
+                                                                      record[hanshuie_colindex].value
+                    self.name2recordsum[k][fukuanjiane_colindex].value = self.name2recordsum[k][
+                                                                             fukuanjiane_colindex].value + record[
+                                                                             fukuanjiane_colindex].value
                 else:
                     recordcopy = copy.deepcopy(record)
                     self.name2recordsum[k] = recordcopy
@@ -195,11 +199,12 @@ def main():
 
     yearStatictics.summary()
 
-    os.system('pause')
-
 
 if __name__ == '__main__':
-    main()
+    try:
+        main()
+    finally:
+        os.system("pause")
 
 
 def test():
