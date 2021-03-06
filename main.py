@@ -4,6 +4,7 @@ import xlrd
 import xlwt
 import copy
 
+
 class MonthBook:
 
     def getSummarys(self):
@@ -12,12 +13,12 @@ class MonthBook:
     def __init__(self, excelname):
         self.excelname = excelname
         self.name2recordlist = {}  # 每个人一个月内的记录
-        self.name2recordsum = {} # 一个月的汇总
+        self.name2recordsum = {}  # 一个月的汇总
         beginIndex = excelname.find("_", 0, len(excelname)) + 1
         endIndex = excelname.rfind(".", 0, len(excelname))
         self.month = excelname[beginIndex:endIndex]
 
-        #print(self.month)
+        # print(self.month)
 
         self.excel_fullname = os.getcwd() + '\\' + excelname
         self.rdata = xlrd.open_workbook(self.excel_fullname)
@@ -61,8 +62,8 @@ class MonthBook:
             i = 0
             for record in v:
                 i = i + 1
-                if i ==1:
-                    continue #列名不要加进去了
+                if i == 1:
+                    continue  # 列名不要加进去了
                 if k in self.name2recordsum:
                     self.name2recordsum[k][2].value = self.name2recordsum[k][2].value + record[2].value
                     self.name2recordsum[k][3].value = self.name2recordsum[k][3].value + record[3].value
@@ -71,7 +72,6 @@ class MonthBook:
                     recordcopy = copy.deepcopy(record)
                     self.name2recordsum[k] = recordcopy
                     sumrecordlist.append(recordcopy)
-
 
         sumrecordlist.append(self.titlerow)
         sumrecordlist.sort(reverse=True, key=comp)
@@ -97,6 +97,7 @@ class MonthBook:
 
         month_summary_name = "./output/book_month_summary_" + self.month + ".xls"
         book_month_summary.save(month_summary_name)
+        print("success 生成：", month_summary_name)
 
 
 def comp(row):
@@ -125,7 +126,7 @@ class YearStatistics:
         titleRow = None
         for book in YearStatistics.monthbooks:
             monthsummarys = book.getSummarys()
-            if titleRow ==None:
+            if titleRow == None:
                 titleRow = book.titlerow
             for (name, summary) in monthsummarys.items():
                 if name in name2summary:
@@ -149,7 +150,8 @@ class YearStatistics:
 
         year_summary_name = "./output/book_year_summary" + ".xls"
         book_year_summary.save(year_summary_name)
-        print("生成：", year_summary_name)
+        print("success 生成：", year_summary_name)
+
 
 def main():
     yearStatictics = YearStatistics()
@@ -164,6 +166,10 @@ def main():
             yearStatictics.addMonthBook(monthbook)
 
     yearStatictics.summary()
+
+    os.system('pause')
+
+
 
 
 if __name__ == '__main__':
