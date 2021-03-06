@@ -1,4 +1,5 @@
 import os
+import sys
 
 import xlrd
 import xlwt
@@ -102,7 +103,7 @@ class MonthBook:
 
 def comp(row):
     if isinstance(row[4].value, str):
-        return 1999999999
+        return sys.maxsize
     return row[4].value
 
 
