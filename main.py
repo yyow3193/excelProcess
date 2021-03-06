@@ -4,137 +4,166 @@ import xlrd
 import xlwt
 import copy
 
+class MonthBook:
 
-def set_style(name, height, bold=True):
-    style = xlwt.XFStyle()  # 初始化样式
+    def getSummarys(self):
+        return self.name2recordsum
 
-    font = xlwt.Font()  # 为样式创建字体
-    font.name = name
-    font.bold = bold
-    #font.color_index = 4
-    font.height = height
+    def __init__(self, excelname):
+        self.excelname = excelname
+        self.name2recordlist = {}  # 每个人一个月内的记录
+        self.name2recordsum = {} # 一个月的汇总
+        beginIndex = excelname.find("_", 0, len(excelname)) + 1
+        endIndex = excelname.rfind(".", 0, len(excelname))
+        self.month = excelname[beginIndex:endIndex]
 
-    style.font = font
-    return style
+        #print(self.month)
+
+        self.excel_fullname = os.getcwd() + '\\' + excelname
+        self.rdata = xlrd.open_workbook(self.excel_fullname)
+        # print('sheets nums:', rdata.nsheets)  # excel sheets 个数
+        self.titlerow = None
+
+        # 汇总每个月的每个人
+        for sheet in self.rdata.sheets():  # 每个月内的每一天是一个sheet
+            # print("open sheet name:", sheet.name)
+            for rowindex in range(sheet.nrows):
+                if rowindex <= 2:  # 前两行是公司名
+                    if self.titlerow == None and rowindex == 2:
+                        self.titlerow = sheet.row(rowindex)
+                    continue
+                row = sheet.row(rowindex)
+                if row[5].value == "":
+                    continue
+
+                if row[5].value in self.name2recordlist:
+                    recordlist = self.name2recordlist[row[5].value]
+                    recordlist.append(row)
+                else:
+                    recordlist = []
+                    self.name2recordlist[row[5].value] = recordlist
+                    self.titlerow = sheet.row(2)  # 这一行是列名
+                    recordlist.append(self.titlerow)
+                    recordlist.append(row)
+
+        for (k, v) in self.name2recordlist.items():
+            persionname = k
+            recordlist = v
+            recordlist.sort(reverse=True, key=comp)
+
+    def summary(self):
+        # 每个人按月汇总
+        book_month_summary = xlwt.Workbook(encoding='utf-8')
+        # 月度汇总表
+        sumsheet = book_month_summary.add_sheet("all", cell_overwrite_ok=True)
+        sumrecordlist = []
+        for (k, v) in self.name2recordlist.items():
+            i = 0
+            for record in v:
+                i = i + 1
+                if i ==1:
+                    continue #列名不要加进去了
+                if k in self.name2recordsum:
+                    self.name2recordsum[k][2].value = self.name2recordsum[k][2].value + record[2].value
+                    self.name2recordsum[k][3].value = self.name2recordsum[k][3].value + record[3].value
+                    self.name2recordsum[k][4].value = self.name2recordsum[k][4].value + record[4].value
+                else:
+                    recordcopy = copy.deepcopy(record)
+                    self.name2recordsum[k] = recordcopy
+                    sumrecordlist.append(recordcopy)
 
 
-file_name='8.1-8.31日福龙结算单(12)_8.xlsx'
-excel_file=os.getcwd()+'\\'+file_name
-rdata=xlrd.open_workbook(excel_file)
-print('sheets nums:', rdata.nsheets)  # excel sheets 个数
+        sumrecordlist.append(self.titlerow)
+        sumrecordlist.sort(reverse=True, key=comp)
+        for rowi in range(len(sumrecordlist)):
+            row = sumrecordlist[rowi]
+            if row != self.titlerow:
+                row[0].value = rowi
+            for colindex in range(len(row)):
+                if colindex <= 5:
+                    sumsheet.write(rowi, colindex, row[colindex].value)
+            if row == self.titlerow:
+                continue
+            persionname = row[5].value
+            everypersionRecordlist = self.name2recordlist[persionname]
+            newsheet = book_month_summary.add_sheet(persionname, cell_overwrite_ok=True)
+            for rowi in range(len(everypersionRecordlist)):
+                row = everypersionRecordlist[rowi]
+                if row != self.titlerow:
+                    row[0].value = rowi
+                for colindex in range(len(row)):
+                    if colindex <= 5:
+                        newsheet.write(rowi, colindex, row[colindex].value)
 
-monthindex = file_name.find("_", len(file_name) - 7, len(file_name)) + 1
-month = file_name[monthindex]
+        month_summary_name = "./output/book_month_summary_" + self.month + ".xls"
+        book_month_summary.save(month_summary_name)
 
-# 每个人按月汇总
-
-book_everymonth_everypersion = xlwt.Workbook(encoding='utf-8')
-
-name2newsheet = {}
-name2recordsumlist = {}
-
-name2recordlist = {}
-titlerow = None
-
-# 汇总每个月的每个人
-for sheet in rdata.sheets():
-    print("open sheet index:", sheet.name)
-    for rowindex in range(sheet.nrows):
-        if rowindex <= 2: # 前两行是公司名
-            if titlerow == None and rowindex == 2:
-                titlerow = sheet.row(rowindex)
-            continue
-        row = sheet.row(rowindex)
-        if row[5].value == "":
-            continue
-
-        if row[5].value in name2recordlist:
-            recordlist = name2recordlist[row[5].value]
-            recordlist.append(row)
-
-            name2recordsumlist[row[5].value][2].value = name2recordsumlist[row[5].value][2].value + row[2].value
-            name2recordsumlist[row[5].value][3].value = name2recordsumlist[row[5].value][3].value + row[3].value
-            name2recordsumlist[row[5].value][4].value = name2recordsumlist[row[5].value][4].value + row[4].value
-
-        else:
-            recordlist = []
-            name2recordlist[row[5].value] = recordlist
-            titlerow = sheet.row(2) # 这一行是列名
-            name2recordsumlist[row[5].value] = copy.deepcopy(row)
-            recordlist.append(titlerow)
-            recordlist.append(row)
-
-
-        # style = xlwt.XFStyle()  # 初始化样式
-        # font = xlwt.Font()  # 为样式创建字体
-        # font.name = 'Times New Roman'
-        # font.bold = True  # 黑体
-        # font.underline = True  # 下划线
-        # font.italic = True  # 斜体字
-        # style.font = font  # 设定样式
-        #
-        # borders = xlwt.Borders()
-        # borders.left = xlwt.Borders.THIN
-        # borders.left = xlwt.Borders.THIN
-        # # NO_LINE： 官方代码中NO_LINE所表示的值为0，没有边框
-        # # THIN： 官方代码中THIN所表示的值为1，边框为实线
-        # # 左边框 细线
-        # borders.left = 1
-        # # 右边框 中细线
-        # borders.right = 2
-        # # 上边框 虚线
-        # borders.top = 3
-        # # 下边框 点线
-        # borders.bottom = 4
-        # # 内边框 粗线
-        # borders.diag = 5
-        #
-        # # 左边框颜色 蓝色
-        # borders.left_colour = 0x0C
-        # # 右边框颜色 金色
-        # borders.right_colour = 0x33
-        # # 上边框颜色 绿色
-        # borders.top_colour = 0x11
-        # # 下边框颜色 红色
-        # borders.bottom_colour = 0x0A
-        # # 内边框 黄色
-        # borders.diag_colour = 0x0D
-        # # 定义格式
-        # style.borders = borders
 
 def comp(row):
-    if isinstance(row[4].value, str) :
+    if isinstance(row[4].value, str):
         return 1999999999
     return row[4].value
 
-for (k, v) in name2recordlist.items():
-    persionname = k
-    recordlist = v
-    recordlist.sort(reverse=True, key=comp)
 
-# 月度汇总表
-recordlist = []
-sumsheet = book_everymonth_everypersion.add_sheet("all", cell_overwrite_ok=True)
-for (k, v) in name2recordsumlist.items():
-    recordlist.append(v)
+class YearStatistics:
+    monthbooks = []
+    name2recordsumlist = {}
 
-recordlist.sort(reverse=True, key=comp)
-for rowi in range(len(recordlist)):
-    row = recordlist[rowi]
-    for colindex in range(len(row)):
-        sumsheet.write(rowi, colindex, row[colindex].value)
+    def __init__(self):
+        pass
 
-    persionname = row[5].value
-    everypersionRecordlist = name2recordlist[persionname]
-    newsheet = book_everymonth_everypersion.add_sheet(persionname, cell_overwrite_ok=True)
-    for rowi in range(len(everypersionRecordlist)):
-        row = everypersionRecordlist[rowi]
-        for colindex in range(len(row)):
-            newsheet.write(rowi, colindex, row[colindex].value)
+    def addMonthBook(self, monthbook):
+        YearStatistics.monthbooks.append(monthbook)
+
+    def summary(self):
+        # 每个人按月汇总
+        book_year_summary = xlwt.Workbook(encoding='utf-8')
+        # 月度汇总表
+        sumsheet = book_year_summary.add_sheet("all", cell_overwrite_ok=True)
+        name2summary = {}
+        summarylist = []
+        titleRow = None
+        for book in YearStatistics.monthbooks:
+            monthsummarys = book.getSummarys()
+            if titleRow ==None:
+                titleRow = book.titlerow
+            for (name, summary) in monthsummarys.items():
+                if name in name2summary:
+                    name2summary[name][2].value = name2summary[name][2].value + summary[2].value
+                    name2summary[name][3].value = name2summary[name][3].value + summary[3].value
+                    name2summary[name][4].value = name2summary[name][4].value + summary[4].value
+                else:
+                    summaryCopy = copy.deepcopy(summary)
+                    name2summary[name] = summaryCopy
+                    summarylist.append(summaryCopy)
+
+        summarylist.append(titleRow)
+        summarylist.sort(reverse=True, key=comp)
+        for rowi in range(len(summarylist)):
+            row = summarylist[rowi]
+            if row != titleRow:
+                row[0].value = rowi
+            for colindex in range(len(row)):
+                if colindex <= 5:
+                    sumsheet.write(rowi, colindex, row[colindex].value)
+
+        year_summary_name = "./output/book_year_summary" + ".xls"
+        book_year_summary.save(year_summary_name)
+
+def main():
+    yearStatictics = YearStatistics()
+
+    for root, dirs, files in os.walk("./input", topdown=False):
+        for name in files:
+            filename = os.path.join(root, name)
+            print("aaa", os.path.join(root, name))
+            monthbook = MonthBook(filename)
+            monthbook.summary()
+
+            yearStatictics.addMonthBook(monthbook)
+
+    yearStatictics.summary()
 
 
-everymonth_everypersion_book_name = "book_everymonth_everypersion_" + month + ".xls"
-book_everymonth_everypersion.save(everymonth_everypersion_book_name)
-
-
-
+if __name__ == '__main__':
+    main()
